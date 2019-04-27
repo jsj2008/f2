@@ -11,9 +11,10 @@ namespace gl {
 
 class Buffer {
 public:
-    Buffer();
+    explicit Buffer(bool init=false);
     ~Buffer();
 
+    void create();
     void bind();
     void unbind();
     void data(unsigned int size, const void *data, GLenum usage);
@@ -24,9 +25,10 @@ private:
 
 class VertexArray {
 public:
-    VertexArray();
+    explicit VertexArray(bool init=false);
     ~VertexArray();
 
+    void create();
     void bind();
     void unbind();
     void vertex_attr(unsigned int location, int size, GLenum type, GLboolean normalize, int stride,

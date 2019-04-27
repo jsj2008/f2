@@ -23,16 +23,16 @@ void Fluid::spawn(glm::vec3 p) {
     ++_num_particles;
 }
 
-void Fluid::spawn(glm::vec3 &p) {
-    _pos.push_back(p);
-    _vel.emplace_back(0.f);
-    _pred_pos.emplace_back(0.f);
-    _temp.emplace_back(0.f);
-    _den.push_back(0.f);
-    _lam.push_back(0.f);
-    _bin_of.emplace_back();
+void Fluid::spawn_cube(glm::vec3 ori, float length, float density) {
+    float stride = 1.f / density;
 
-    ++_num_particles;
+    for (float x = 0; x <= length; x += stride) {
+        for (float y = 0; y <= length; y += stride) {
+            for (float z = 0; z <= length; z += stride) {
+                spawn(ori + glm::vec3(x, y, z));
+            }
+        }
+    }
 }
 
 void Fluid::update(float dt) {

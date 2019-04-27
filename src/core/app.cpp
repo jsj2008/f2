@@ -3,11 +3,13 @@
 //
 
 #include "app.h"
+#include "../scene/geometry/plane.h"
 
 bool App::init() {
     if (!_view.init())
         return false;
 
+    Plane::init();
     pbf::FluidRenderer::init();
 
     _sim = new Sim;

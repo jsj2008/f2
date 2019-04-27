@@ -50,9 +50,9 @@ FragmentShader::FragmentShader() {
 
 
 
-Program::Program() {
+void Program::create() {
     _program = glCreateProgram();
-};
+}
 
 void Program::use() {
     glUseProgram(_program);

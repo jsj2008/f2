@@ -3,7 +3,6 @@
 #define CL_HPP_CL_1_2_DEFAULT_BUILD
 #define CL_HPP_ENABLE_EXCEPTIONS
 
-#include <iostream>
 #include "core/app.h"
 
 int main() {

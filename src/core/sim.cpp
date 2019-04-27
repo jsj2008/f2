@@ -4,21 +4,26 @@
 
 #include "sim.h"
 #include "input.h"
+#include "../scene/geometry/plane.h"
 
 Sim::Sim() :
     _last_mouse(0.f), _cam_trajectory(0.f), _cam_inertia(0.f)
 {
     attach_input_cbs();
 
-    _fluid.spawn(glm::vec3(0.f));
-    _fluid.spawn(glm::vec3(0.25f, 0.25f, 0.f));
-    _fluid.spawn(glm::vec3(-0.25f, 0.25f, 0.f));
+    _fluid.spawn_cube(glm::vec3(0.5f, 0.5f, 0.5f), 1.f);
 
     _renderer = new pbf::FluidRenderer();
     _renderer->set_fluid(_fluid);
     _scene.add_thing(_renderer);
 
-    glm::vec3 p(0.f, 0.f, 2.f);
+    _scene.add_thing(new Plane(glm::vec3(0.f), glm::vec3(0.f), glm::vec2(4.f, 2.f)));
+    _scene.add_thing(new Plane(glm::vec3(0.f, 2.f, 0.f), glm::vec3(M_PI_2, 0.f, 0.f), glm::vec2(4.f, 2.f)));
+    _scene.add_thing(new Plane(glm::vec3(0.f, 0.f, 2.f), glm::vec3(-M_PI_2, 0.f, 0.f), glm::vec2(4.f, 2.f)));
+    _scene.add_thing(new Plane(glm::vec3(4.f, 0.f, 0.f), glm::vec3(0.f, 0.f, M_PI_2), glm::vec2(2.f, 2.f)));
+    _scene.add_thing(new Plane(glm::vec3(0.f, 2.f, 0.f), glm::vec3(0.f, 0.f, -M_PI_2), glm::vec2(2.f, 2.f)));
+
+    glm::vec3 p(2.f, 2.f, 5.f);
     _camera.set_position(p);
 }
 
@@ -30,7 +35,9 @@ void Sim::update() {
 void Sim::render() {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_BLEND);
+    glEnable(GL_CULL_FACE);
     glEnable(GL_PROGRAM_POINT_SIZE);
+    glCullFace(GL_BACK);
 
     glClearColor(0.9f, 0.9f, 0.9f, 1.f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -90,9 +97,7 @@ void Sim::handle_input() {
     if (Input::poll_key(GLFW_KEY_W) == GLFW_PRESS) {
         _camera.move(FRONT, 0.02);
         movement = true;
-    }
-
-    if (Input::poll_key(GLFW_KEY_S) == GLFW_PRESS) {
+    } else if (Input::poll_key(GLFW_KEY_S) == GLFW_PRESS) {
         _camera.move(BACK, 0.02);
         movement = true;
     }
@@ -100,9 +105,7 @@ void Sim::handle_input() {
     if (Input::poll_key(GLFW_KEY_A) == GLFW_PRESS) {
         _camera.move(LEFT, 0.02);
         movement = true;
-    }
-
-    if (Input::poll_key(GLFW_KEY_D) == GLFW_PRESS) {
+    } else if (Input::poll_key(GLFW_KEY_D) == GLFW_PRESS) {
         _camera.move(RIGHT, 0.02);
         movement = true;
     }
@@ -110,9 +113,7 @@ void Sim::handle_input() {
     if (Input::poll_key(GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
         _camera.move(BOTTOM, 0.02);
         movement = true;
-    }
-
-    if (Input::poll_key(GLFW_KEY_SPACE) == GLFW_PRESS) {
+    } else if (Input::poll_key(GLFW_KEY_SPACE) == GLFW_PRESS) {
         _camera.move(TOP, 0.02);
         movement = true;
     }

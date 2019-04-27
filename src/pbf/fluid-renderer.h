@@ -16,7 +16,7 @@ class FluidRenderer : public Thing {
 public:
     FluidRenderer();
 
-    void render(Camera &camera);
+    void render(Camera &camera) override;
     void set_fluid(Fluid &fluid);
 
     static void init();
@@ -27,7 +27,7 @@ private:
 
     Fluid *_fluid;
 
-    static gl::Program *points_prog;
+    static gl::Program points_prog;
 };
 
 }

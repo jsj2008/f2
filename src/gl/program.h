@@ -47,7 +47,7 @@ struct ProgramArg {
 
 class Program {
 public:
-    Program();
+    void create();
 
     void use();
     void unuse();
@@ -67,9 +67,9 @@ public:
     void uniform(std::string name, void *value);
 
     bool is_linked();
-    GLuint _program;
-private:
 
+private:
+    GLuint _program;
 
     std::map<std::string, int> _attrs;
     std::map<std::string, std::pair<int, GLenum>> _uniforms;

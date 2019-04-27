@@ -6,12 +6,19 @@
 
 namespace gl {
 
-Buffer::Buffer() {
-    glGenBuffers(1, &_buffer);
+Buffer::Buffer(bool init) : _buffer(0) {
+    if (init)
+        glGenBuffers(1, &_buffer);
 }
 
 Buffer::~Buffer() {
-    glDeleteBuffers(1, &_buffer);
+    if (_buffer)
+        glDeleteBuffers(1, &_buffer);
+}
+
+void Buffer::create() {
+    if (!_buffer)
+        glGenBuffers(1, &_buffer);
 }
 
 void Buffer::bind() {
@@ -28,12 +35,19 @@ void Buffer::data(unsigned int size, const void *data, GLenum usage) {
 
 
 
-VertexArray::VertexArray() {
-    glGenVertexArrays(1, &_vao);
+VertexArray::VertexArray(bool init) : _vao(0) {
+    if (init)
+        glGenVertexArrays(1, &_vao);
 }
 
 VertexArray::~VertexArray() {
-    glDeleteVertexArrays(1, &_vao);
+    if (_vao)
+        glDeleteVertexArrays(1, &_vao);
+}
+
+void VertexArray::create() {
+    if (!_vao)
+        glGenVertexArrays(1, &_vao);
 }
 
 void VertexArray::bind() {

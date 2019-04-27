@@ -5,3 +5,5 @@ set(CMAKE_CXX_STANDARD 11)
 
 add_subdirectory(deps)
 add_subdirectory(src)
+
+file(COPY shaders DESTINATION ${CMAKE_BINARY_DIR})
