@@ -3,11 +3,15 @@
 //
 
 #include "app.h"
+#include "accel.h"
 #include "../scene/geometry/plane.h"
 
 bool App::init() {
     if (!_view.init())
         return false;
+
+    CLContextManager::init();
+    pbf::Fluid::init();
 
     Plane::init();
     pbf::FluidRenderer::init();
@@ -21,7 +25,7 @@ void App::run() {
     double sys_curr, sys_last, dt;
     sys_last = glfwGetTime();
 
-    unsigned int num_updates;
+    unsigned num_updates;
     _running = true;
 
     while (_running) {
@@ -32,8 +36,8 @@ void App::run() {
 
         glfwPollEvents();
         num_updates = 0;
-        while (num_updates < 10 && acc > 0.0083) {
-            acc -= 0.0083;
+        while (num_updates < 1 && acc > 0.0167) {
+            acc -= 0.0167;
             update();
             ++num_updates;
         }
