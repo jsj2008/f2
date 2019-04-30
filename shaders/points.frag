@@ -5,7 +5,6 @@ flat in vec4 f_pos;
 out vec4 f_color;
 
 uniform float radius;
-uniform vec3 eye;
 uniform mat4 view;
 uniform mat4 proj;
 

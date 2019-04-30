@@ -20,12 +20,14 @@ private:
     Scene _scene;
     Camera _camera;
 
-    pbf::Fluid _fluid;
-    pbf::FluidRenderer *_renderer;
+    std::shared_ptr<pbf::Fluid> _fluid;
+    std::shared_ptr<pbf::FluidRenderer> _renderer;
 
     glm::vec2 _last_mouse;
     glm::vec3 _cam_trajectory;
     float _cam_inertia;
+
+    int updated;
 
     void attach_input_cbs();
     void handle_input();

@@ -10,11 +10,14 @@
 
 class View {
 public:
-    ~View();
-
+    void destroy();
     bool init();
     void swap_buffers();
     bool should_close();
+
+    GLFWwindow *window() {
+        return _window;
+    }
 
 private:
     const char *_title;

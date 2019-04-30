@@ -17,7 +17,7 @@ public:
     FluidRenderer();
 
     void render(Camera &camera) override;
-    void set_fluid(Fluid &fluid);
+    void set_fluid(const std::shared_ptr<Fluid> &fluid);
 
     static void init();
 
@@ -25,7 +25,7 @@ private:
     gl::Buffer _vbo;
     gl::VertexArray _vao;
 
-    Fluid *_fluid;
+    std::shared_ptr<Fluid> _fluid;
 
     static gl::Program points_prog;
 };

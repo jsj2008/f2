@@ -2,26 +2,29 @@
 // Created by Dillon Yao on 4/25/19.
 //
 
+#include <iostream>
 #include "sim.h"
 #include "input.h"
 #include "../scene/geometry/plane.h"
 
 Sim::Sim() :
-    _last_mouse(0.f), _cam_trajectory(0.f), _cam_inertia(0.f)
-{
+    _last_mouse(0.f), _cam_trajectory(0.f),
+    _cam_inertia(0.f), updated(0) {
+
     attach_input_cbs();
 
-    _fluid.spawn_cube(glm::vec3(0.5f, 0.5f, 0.5f), 1.f);
+    _fluid = std::make_shared<pbf::Fluid>();
+    _fluid->spawn_cube(glm::vec3(0.5f, 0.5f, 0.5f), 0.5f, 20);
 
-    _renderer = new pbf::FluidRenderer();
+    _renderer = std::make_shared<pbf::FluidRenderer>();
     _renderer->set_fluid(_fluid);
     _scene.add_thing(_renderer);
 
-    _scene.add_thing(new Plane(glm::vec3(0.f), glm::vec3(0.f), glm::vec2(4.f, 2.f)));
-    _scene.add_thing(new Plane(glm::vec3(0.f, 2.f, 0.f), glm::vec3(M_PI_2, 0.f, 0.f), glm::vec2(4.f, 2.f)));
-    _scene.add_thing(new Plane(glm::vec3(0.f, 0.f, 2.f), glm::vec3(-M_PI_2, 0.f, 0.f), glm::vec2(4.f, 2.f)));
-    _scene.add_thing(new Plane(glm::vec3(4.f, 0.f, 0.f), glm::vec3(0.f, 0.f, M_PI_2), glm::vec2(2.f, 2.f)));
-    _scene.add_thing(new Plane(glm::vec3(0.f, 2.f, 0.f), glm::vec3(0.f, 0.f, -M_PI_2), glm::vec2(2.f, 2.f)));
+    _scene.add_thing(std::make_shared<Plane>(glm::vec3(0.f), glm::vec3(0.f), glm::vec2(4.f, 2.f)));
+    _scene.add_thing(std::make_shared<Plane>(glm::vec3(0.f, 2.f, 0.f), glm::vec3(M_PI_2, 0.f, 0.f), glm::vec2(4.f, 2.f)));
+    _scene.add_thing(std::make_shared<Plane>(glm::vec3(0.f, 0.f, 2.f), glm::vec3(-M_PI_2, 0.f, 0.f), glm::vec2(4.f, 2.f)));
+    _scene.add_thing(std::make_shared<Plane>(glm::vec3(4.f, 0.f, 0.f), glm::vec3(0.f, 0.f, M_PI_2), glm::vec2(2.f, 2.f)));
+    _scene.add_thing(std::make_shared<Plane>(glm::vec3(0.f, 2.f, 0.f), glm::vec3(0.f, 0.f, -M_PI_2), glm::vec2(2.f, 2.f)));
 
     glm::vec3 p(2.f, 2.f, 5.f);
     _camera.set_position(p);
@@ -29,7 +32,7 @@ Sim::Sim() :
 
 void Sim::update() {
     handle_input();
-    _fluid.update(1.f / 60);
+    _fluid->update(1.f / 60);
 }
 
 void Sim::render() {
@@ -46,11 +49,11 @@ void Sim::render() {
 }
 
 void Sim::attach_input_cbs() {
-    Input::on_resize([this](int width, int height) {
+    Input::on_resize([&](int width, int height) {
         _camera.set_aspect((float) width / height);
     });
 
-    Input::on_mouse([this](int button, int action) {
+    Input::on_mouse([&](int button, int action) {
         if (button != GLFW_MOUSE_BUTTON_LEFT)
             return;
 
@@ -62,7 +65,7 @@ void Sim::attach_input_cbs() {
         }
     });
 
-    Input::on_cursor([this](float x, float y) {
+    Input::on_cursor([&](float x, float y) {
         if (Input::poll_mouse(GLFW_MOUSE_BUTTON_LEFT) != GLFW_PRESS)
             return;
 
@@ -72,7 +75,7 @@ void Sim::attach_input_cbs() {
         _last_mouse = p;
     });
 
-    Input::on_key([this](int key, int scancode, int action) {
+    Input::on_key([&](int key, int scancode, int action) {
         if (action != GLFW_PRESS)
             return;
 

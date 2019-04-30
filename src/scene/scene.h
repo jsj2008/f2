@@ -11,22 +11,17 @@
 
 class Scene {
 public:
-    ~Scene() {
-        for (Thing *t : _things)
-            delete t;
-    }
-
     void render(Camera &camera) {
-        for (Thing *t : _things)
+        for (auto &t : _things)
             t->render(camera);
     }
 
-    void add_thing(Thing *t) {
+    void add_thing(const std::shared_ptr<Thing> &t) {
         _things.push_back(t);
     }
 
 private:
-    std::vector<Thing *> _things;
+    std::vector<std::shared_ptr<Thing>> _things;
 
 };
 

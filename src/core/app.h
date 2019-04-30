@@ -23,7 +23,7 @@ private:
     void update();
     void render();
 
-    Sim *_sim;
+    std::unique_ptr<Sim> _sim;
 };
 
 

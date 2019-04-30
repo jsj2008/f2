@@ -35,8 +35,8 @@ void Plane::init() {
 
     vao.bind();
     vbo.bind();
-    vbo.data(12 * sizeof(float), points, GL_STATIC_DRAW);
     vao.vertex_attr(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+    vbo.data(12 * sizeof(float), points, GL_STATIC_DRAW);
     vbo.unbind();
     vao.unbind();
 }
@@ -67,6 +67,7 @@ void Plane::render(Camera &camera) {
 
     vao.bind();
     glDrawArrays(GL_TRIANGLE_STRIP, 0, (GLsizei) 4);
+    vao.unbind();
 }
 
 void Plane::set_position(glm::vec3 &pos) {

@@ -6,7 +6,7 @@
 #include "view.h"
 #include "input.h"
 
-View::~View() {
+void View::destroy() {
     glfwDestroyWindow(_window);
     glfwTerminate();
 }

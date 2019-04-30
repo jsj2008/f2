@@ -13,6 +13,7 @@
 class Input {
 public:
     static bool init(GLFWwindow *window);
+    static void destroy();
 
     static void on_key(const std::function<void(int, int, int)> &cb) {
         get()->_key_cbs.push_back(cb);

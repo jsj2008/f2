@@ -2,6 +2,7 @@
 // Created by Dillon Yao on 4/25/19.
 //
 
+#include <iostream>
 #include "app.h"
 #include "accel.h"
 #include "../scene/geometry/plane.h"
@@ -16,7 +17,7 @@ bool App::init() {
     Plane::init();
     pbf::FluidRenderer::init();
 
-    _sim = new Sim;
+    _sim = std::make_unique<Sim>();
     return true;
 }
 
@@ -48,6 +49,9 @@ void App::run() {
             _running = false;
         }
     }
+
+    Input::destroy();
+    _view.destroy();
 }
 
 void App::terminate() {
