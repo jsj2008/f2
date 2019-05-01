@@ -7,3 +7,4 @@ add_subdirectory(deps)
 add_subdirectory(src)
 
 file(COPY shaders DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY kernels DESTINATION ${CMAKE_BINARY_DIR})

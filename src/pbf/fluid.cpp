@@ -23,7 +23,7 @@ cl::Kernel Fluid::_k_calc_vort;
 cl::Kernel Fluid::_k_apply_visc_vort;
 
 void Fluid::init() {
-    std::ifstream input("../kernels/pbf.cl");
+    std::ifstream input("./kernels/pbf.cl");
     if (input.fail())
         throw std::runtime_error("Could not open file");
 
