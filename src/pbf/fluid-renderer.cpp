@@ -3,7 +3,6 @@
 //
 
 #include <glm/gtc/type_ptr.hpp>
-#include <iostream>
 #include "fluid-renderer.h"
 #include "../core/input.h"
 

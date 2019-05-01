@@ -2,7 +2,6 @@
 // Created by Dillon Yao on 4/25/19.
 //
 
-#include <iostream>
 #include "app.h"
 #include "accel.h"
 #include "../scene/geometry/plane.h"

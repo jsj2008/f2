@@ -2,7 +2,6 @@
 // Created by Dillon Yao on 4/27/19.
 //
 
-#include <iostream>
 #include "accel.h"
 
 cl::Context CLContextManager::_context;

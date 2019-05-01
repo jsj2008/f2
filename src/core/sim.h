@@ -27,6 +27,7 @@ private:
     glm::vec3 _cam_trajectory;
     float _cam_inertia;
 
+    bool _pause;
     int updated;
 
     void attach_input_cbs();

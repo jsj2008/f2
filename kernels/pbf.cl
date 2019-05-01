@@ -7,7 +7,7 @@ typedef struct fluid_params {
     float gravity;
     float kernel_h;
     float rest_density;
-    float desity_eps;
+    float density_eps;
     float s_corr_k;
     float s_corr_dq_multiplier;
     float s_corr_n;
@@ -69,9 +69,9 @@ void prefix_sum(__global const unsigned *bin_counts,
                 __global unsigned *bin_starts) {
 
     size_t id = get_global_id(0);
-    unsigned acc = 0;
+    unsigned i, acc = 0;
 
-    for (unsigned i = 0; i < id; ++i)
+    for (i = 0; i < id; ++i)
         acc += bin_counts[i];
 
     bin_starts[id] = acc;
@@ -94,12 +94,8 @@ void reindex_particles(const fluid_params params,
 
     unsigned id_new = bin_starts[b] + bin_offset[id_old];
 
-    if (id_new > 1000)
-        return;
-
     vstore3(vload3(id_old, pos), id_new, r_pos);
     vstore3(vload3(id_old, pred_pos), id_new, r_pred_pos);
-
 }
 
 __kernel
@@ -120,14 +116,17 @@ void calculate_lambda(const fluid_params params,
     unsigned n_bin, n_bin_start, n_bin_end, id_j;
     float3 pred_pos_j, grad_ci_pk, r;
 
-    float3 grad_ci_pi = float3(0.f, 0.f, 0.f);
+    float3 grad_ci_pi = (float3){0.f, 0.f, 0.f};
     float density = 0.f;
     float denom = 0.f;
 
     for (x = -1; x <= 1; ++x) {
         for (y = -1; y <= 1; ++y) {
             for (z = -1; z <= 1; ++z) {
-                n_bin_index = b_index + int3(x, y, z);
+                n_bin_index.x = (int) b_index.x + x;
+                n_bin_index.y = (int) b_index.y + y;
+                n_bin_index.z = (int) b_index.z + z;
+
                 n_bin = bin(params.dim_x, params.dim_y, n_bin_index);
 
                 if (n_bin >= num_bins)
@@ -152,16 +151,16 @@ void calculate_lambda(const fluid_params params,
         }
     }
 
-    float num = density / params.rest_density - 1.f;
     denom += dot(grad_ci_pi, grad_ci_pi);
-//    lambda[id_i] = -num / (denom / pow(params.rest_density, 2.f) + params.desity_eps);
-    lambda[id_i] = params.kernel_h;
+    float c_i = density / params.rest_density - 1.f;
+
+    lambda[id_i] = -c_i / (denom / pow(params.rest_density, 2.f) + params.density_eps);
 }
 
 __kernel
 void calculate_dp(const fluid_params params,
-                __global const float *bin_starts,
-                __global const float *bin_counts,
+                __global const unsigned *bin_starts,
+                __global const unsigned *bin_counts,
                 __global const float *pred_pos,
                 __global const float *lambda,
                 __global float *d_pos) {
@@ -179,7 +178,7 @@ void calculate_dp(const fluid_params params,
     float lambda_j, s_corr;
     float3 pred_pos_j, r;
 
-    float3 acc = float3(0.f, 0.f, 0.f);
+    float3 acc = (float3){0.f, 0.f, 0.f};
     float s_corr_mult = -params.s_corr_k / pow(
             poly6(float3(params.s_corr_dq_multiplier, 0.f, 0.f), params.kernel_h),
             params.s_corr_n);
@@ -187,7 +186,9 @@ void calculate_dp(const fluid_params params,
     for (x = -1; x <= 1; ++x) {
         for (y = -1; y <= 1; ++y) {
             for (z = -1; z <= 1; ++z) {
-                n_bin_index = b_index + int3(x, y, z);
+                n_bin_index.x = (int) b_index.x + x;
+                n_bin_index.y = (int) b_index.y + y;
+                n_bin_index.z = (int) b_index.z + z;
                 n_bin = bin(params.dim_x, params.dim_y, n_bin_index);
 
                 if (n_bin >= num_bins)
@@ -207,7 +208,10 @@ void calculate_dp(const fluid_params params,
         }
     }
 
-    vstore3(acc, id_i, d_pos);
+    float3 dp = (1.f / params.rest_density) * acc;
+    dp = clamp(dp, -0.1f, 0.1f);
+
+    vstore3(dp, id_i, d_pos);
 }
 
 __kernel
@@ -222,8 +226,8 @@ void update_pred_position(const fluid_params params,
 
     float3 pred = clamp(
             pred_pos_i + dp_i,
-            float3(params.x_min + EPS_F, params.y_min + EPS_F, params.z_min + EPS_F),
-            float3(params.x_max - EPS_F, params.y_max - EPS_F, params.z_max - EPS_F));
+            (float3){params.x_min + 0.02f, params.y_min + 0.02f, params.z_min + 0.02f},
+            (float3){params.x_max - 0.02f, params.y_max - 0.02f, params.z_max - 0.02f});
 
     vstore3(pred, id, new_pred);
 }
@@ -238,7 +242,114 @@ void update_velocity(const fluid_params params,
     float3 pos_i = vload3(id, pos);
     float3 pred_pos_i = vload3(id, pred_pos);
     float3 v = (1.f / params.dt) * (pred_pos_i - pos_i);
+
     vstore3(v, id, vel);
+}
+
+__kernel
+void calculate_vorticities(const fluid_params params,
+                __global const unsigned *bin_starts,
+                __global const unsigned *bin_counts,
+                __global const float *pos,
+                __global const float *vel,
+                __global float *vort) {
+
+    size_t id_i = get_global_id(0);
+    float3 pos_i = vload3(id_i, pos);
+    float3 vel_i = vload3(id_i, vel);
+
+    unsigned num_bins = params.dim_x * params.dim_y * params.dim_z;
+    uint3 b_index = bin_index(params.dim_x, params.dim_y, params.dim_z, params.grid_res, pos_i);
+
+    uint3 n_bin_index;
+    int x, y, z;
+    unsigned n_bin, n_bin_start, n_bin_end, id_j;
+    float3 v_ij, r;
+
+    float3 w_i = (float3){0.f, 0.f, 0.f};
+
+    for (x = -1; x <= 1; ++x) {
+        for (y = -1; y <= 1; ++y) {
+            for (z = -1; z <= 1; ++z) {
+                n_bin_index.x = (int) b_index.x + x;
+                n_bin_index.y = (int) b_index.y + y;
+                n_bin_index.z = (int) b_index.z + z;
+
+                n_bin = bin(params.dim_x, params.dim_y, n_bin_index);
+
+                if (n_bin >= num_bins)
+                    continue;
+
+                n_bin_start = bin_starts[n_bin];
+                n_bin_end = n_bin_start + bin_counts[n_bin];
+
+                for (id_j = n_bin_start; id_j < n_bin_end; ++id_j) {
+                    v_ij = vload3(id_j, vel) - vel_i;
+                    r = pos_i - vload3(id_j, pos);
+                    w_i += cross(v_ij, grad_spiky(r, params.kernel_h));
+                }
+            }
+        }
+    }
+
+    vstore3(w_i, id_i, vort);
+}
+
+__kernel
+void apply_visc_vort(const fluid_params params,
+                __global const unsigned *bin_starts,
+                __global const unsigned *bin_counts,
+                __global const float *pos,
+                __global const float *vel,
+                __global const float *vort,
+                __global float *vel_new) {
+
+    size_t id_i = get_global_id(0);
+    float3 pos_i = vload3(id_i, pos);
+    float3 vel_i = vload3(id_i, vel);
+    float3 w_i = vload3(id_i, vort);
+
+    unsigned num_bins = params.dim_x * params.dim_y * params.dim_z;
+    uint3 b_index = bin_index(params.dim_x, params.dim_y, params.dim_z, params.grid_res, pos_i);
+
+    uint3 n_bin_index;
+    int x, y, z;
+    unsigned n_bin, n_bin_start, n_bin_end, id_j;
+    float3 r;
+
+    float3 grad_vort = (float3){0.f, 0.f, 0.f};
+    float3 acc_visc = (float3){0.f, 0.f, 0.f};
+
+    for (x = -1; x <= 1; ++x) {
+        for (y = -1; y <= 1; ++y) {
+            for (z = -1; z <= 1; ++z) {
+                n_bin_index.x = (int) b_index.x + x;
+                n_bin_index.y = (int) b_index.y + y;
+                n_bin_index.z = (int) b_index.z + z;
+
+                n_bin = bin(params.dim_x, params.dim_y, n_bin_index);
+
+                if (n_bin >= num_bins)
+                    continue;
+
+                n_bin_start = bin_starts[n_bin];
+                n_bin_end = n_bin_start + bin_counts[n_bin];
+
+                for (id_j = n_bin_start; id_j < n_bin_end; ++id_j) {
+                    r = pos_i - vload3(id_j, pos);
+                    grad_vort += length(vload3(id_j, vort)) * grad_spiky(r, params.kernel_h);
+                    acc_visc += poly6(r, params.kernel_h) * (vload3(id_j, vel) - vel_i);
+                }
+            }
+        }
+    }
+
+    float l = length(grad_vort);
+    if (l > EPS_F)
+        grad_vort = (1.f / l) * grad_vort;
+
+    float3 v = vel_i + params.visc_c * acc_visc + params.dt * params.vort_eps * cross(grad_vort, w_i);
+    vstore3(v, id_i, vel_new);
 }
 
 inline unsigned bin(unsigned dim_x, unsigned dim_y, uint3 b) {
@@ -250,17 +361,17 @@ inline uint3 bin_index(unsigned dim_x, unsigned dim_y, unsigned dim_z, float bin
     b.x = p.x / bin_res;
     b.y = p.y / bin_res;
     b.z = p.z / bin_res;
-    return clamp(b, uint3(0, 0, 0), uint3(dim_x - 1, dim_y - 1, dim_z - 1));
+    return clamp(b, (uint3){0, 0, 0}, (uint3){dim_x - 1, dim_y - 1, dim_z - 1});
 }
 
-float poly6(float3 ri, float h) {
+inline float poly6(float3 ri, float h) {
     float r = length(ri);
     if (r >= h || r < EPS_F)
         return 0.f;
     return (315.f / (64.f * PI * pow(h, 9.f))) * pow(h * h - r * r, 3.f);
 }
 
-float3 grad_spiky(float3 ri, float h) {
+inline float3 grad_spiky(float3 ri, float h) {
     float r = length(ri);
     if (r >= h || r < EPS_F)
         return float3(0, 0, 0);

@@ -2,19 +2,18 @@
 // Created by Dillon Yao on 4/25/19.
 //
 
-#include <iostream>
 #include "sim.h"
 #include "input.h"
 #include "../scene/geometry/plane.h"
 
 Sim::Sim() :
     _last_mouse(0.f), _cam_trajectory(0.f),
-    _cam_inertia(0.f), updated(0) {
+    _cam_inertia(0.f), updated(0), _pause(false) {
 
     attach_input_cbs();
 
     _fluid = std::make_shared<pbf::Fluid>();
-    _fluid->spawn_cube(glm::vec3(0.5f, 0.5f, 0.5f), 0.5f, 20);
+    _fluid->spawn_cube(glm::vec3(0.25f, 0.25f, 0.25f), 1.5f, 20);
 
     _renderer = std::make_shared<pbf::FluidRenderer>();
     _renderer->set_fluid(_fluid);
@@ -26,13 +25,14 @@ Sim::Sim() :
     _scene.add_thing(std::make_shared<Plane>(glm::vec3(4.f, 0.f, 0.f), glm::vec3(0.f, 0.f, M_PI_2), glm::vec2(2.f, 2.f)));
     _scene.add_thing(std::make_shared<Plane>(glm::vec3(0.f, 2.f, 0.f), glm::vec3(0.f, 0.f, -M_PI_2), glm::vec2(2.f, 2.f)));
 
-    glm::vec3 p(2.f, 2.f, 5.f);
+    glm::vec3 p(2.f, 1.f, 5.f);
     _camera.set_position(p);
 }
 
 void Sim::update() {
     handle_input();
-    _fluid->update(1.f / 60);
+    if (!_pause)
+        _fluid->update();
 }
 
 void Sim::render() {
@@ -81,6 +81,7 @@ void Sim::attach_input_cbs() {
 
         switch (key) {
             case GLFW_KEY_P:
+                _pause = !_pause;
                 break;
             case GLFW_KEY_S:
                 break;

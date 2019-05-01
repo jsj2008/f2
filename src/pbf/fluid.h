@@ -11,26 +11,26 @@
 
 namespace pbf {
 
-static const size_t INIT_POS_BUF_SIZE = 10000;
+static const size_t INIT_POS_BUF_CAP = 16384;
 
 struct FluidParams {
     unsigned char solver_iterations = 2;
-    float dt = 0.0167;
+    float dt = 0.0083f;
     float gravity = -9.8f;
     float kernel_h = 0.1f;
-    float rest_density = 7000.f;
+    float rest_density = 8000.f;
     float desity_eps = 800.f;
-    float s_corr_k = 0.0005f;
-    float s_corr_dq_multiplier = 0.f;
-    float s_corr_n = 4;
-    float vort_eps = 0.00017f;
-    float visc_c = 0.000001f;
+    float s_corr_k = 0.0001f;
+    float s_corr_dq_multiplier = 0.01f;
+    float s_corr_n = 4.f;
+    float vort_eps = 0.0001f;
+    float visc_c = 0.00001f;
 
-    float grid_res = 0.2f;
+    float grid_res = 0.1f;
     float x_min = 0.f;
-    float x_max = 4.f;
+    float x_max = 2.f;
     float y_min = 0.f;
-    float y_max = 4.f;
+    float y_max = 2.f;
     float z_min = 0.f;
     float z_max = 2.f;
 };
@@ -47,14 +47,19 @@ public:
     Fluid();
     Fluid(FluidParams &params);
 
-    void spawn(glm::vec3 p);
+    inline void spawn(glm::vec3 p);
     void spawn_cube(glm::vec3 ori, float length, float density=10);
 
-    void update(float dt);
+    void update();
     void clear();
 
-    FluidParams &params();
-    void set_dirty();
+    FluidParams &params() {
+        return _params.fluid_params;
+    }
+
+    void set_dirty() {
+        _params_dirty = true;
+    }
 
     static void init();
 
@@ -69,20 +74,22 @@ private:
     cl::Buffer _cl_int_pos;
     cl::Buffer _cl_int_vel;
     cl::Buffer _cl_int_pred_pos;
-    cl::Buffer _cl_int_t_pos;
-    cl::Buffer _cl_int_t_pred_pos;
     cl::Buffer _cl_int_lambda;
 
     cl::Buffer _cl_int_bin_offset;
     cl::Buffer _cl_int_bin_counts;
     cl::Buffer _cl_int_bin_starts;
 
+    cl::Buffer _cl_int_temp_0;
+    cl::Buffer _cl_int_temp_1;
+
     cl::Buffer *_b_pos;
-    cl::Buffer *_b_t_pos;
     cl::Buffer *_b_pred_pos;
-    cl::Buffer *_b_t_pred_pos;
-    cl::Buffer *_b_vel;
-    cl::Buffer *_b_dp;
+    cl::Buffer *_b_vel_dp;
+    cl::Buffer *_b_lambda;
+
+    cl::Buffer *_b_temp_0;
+    cl::Buffer *_b_temp_1;
 
     bool _should_resize;
     bool _params_dirty;
@@ -114,6 +121,8 @@ private:
     static cl::Kernel _k_calc_dp;
     static cl::Kernel _k_update_pred_pos;
     static cl::Kernel _k_update_vel;
+    static cl::Kernel _k_calc_vort;
+    static cl::Kernel _k_apply_visc_vort;
 
     friend class FluidRenderer;
 };
