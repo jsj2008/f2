@@ -8,7 +8,7 @@
 
 Sim::Sim() :
     _last_mouse(0.f), _cam_trajectory(0.f),
-    _cam_inertia(0.f), updated(0), _pause(false) {
+    _cam_inertia(0.f), updated(0), _pause(true) {
 
     attach_input_cbs();
 
@@ -17,13 +17,13 @@ Sim::Sim() :
 
     _renderer = std::make_shared<pbf::FluidRenderer>();
     _renderer->set_fluid(_fluid);
-    _scene.add_thing(_renderer);
 
     _scene.add_thing(std::make_shared<Plane>(glm::vec3(0.f), glm::vec3(0.f), glm::vec2(4.f, 2.f)));
     _scene.add_thing(std::make_shared<Plane>(glm::vec3(0.f, 2.f, 0.f), glm::vec3(M_PI_2, 0.f, 0.f), glm::vec2(4.f, 2.f)));
     _scene.add_thing(std::make_shared<Plane>(glm::vec3(0.f, 0.f, 2.f), glm::vec3(-M_PI_2, 0.f, 0.f), glm::vec2(4.f, 2.f)));
     _scene.add_thing(std::make_shared<Plane>(glm::vec3(4.f, 0.f, 0.f), glm::vec3(0.f, 0.f, M_PI_2), glm::vec2(2.f, 2.f)));
     _scene.add_thing(std::make_shared<Plane>(glm::vec3(0.f, 2.f, 0.f), glm::vec3(0.f, 0.f, -M_PI_2), glm::vec2(2.f, 2.f)));
+    _scene.add_thing(_renderer);
 
     glm::vec3 p(2.f, 1.f, 5.f);
     _camera.set_position(p);

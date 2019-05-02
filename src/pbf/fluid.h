@@ -28,7 +28,7 @@ struct FluidParams {
 
     float grid_res = 0.1f;
     float x_min = 0.f;
-    float x_max = 2.f;
+    float x_max = 4.f;
     float y_min = 0.f;
     float y_max = 2.f;
     float z_min = 0.f;

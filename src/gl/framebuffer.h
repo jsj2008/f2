@@ -9,7 +9,15 @@
 namespace gl {
 
 class Framebuffer {
+public:
+  explicit Framebuffer(bool init=false);
+  ~Framebuffer();
+  
+  void bind();
+  void unbind();
 
+private:
+  unsigned _fbo;
 };
 
 }

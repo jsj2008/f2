@@ -12,6 +12,6 @@ uniform mat4 proj;
 
 void main() {
     f_pos = model * vec4(a_pos, 1.f);
-	gl_Position = proj * view * f_pos;
+	  gl_Position = proj * view * f_pos;
     gl_PointSize = vp.y * proj[1][1] * radius / gl_Position.w;
 }

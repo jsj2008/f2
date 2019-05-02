@@ -9,6 +9,7 @@
 #include "../gl/buffer.h"
 #include "../gl/program.h"
 #include "../scene/thing.h"
+#include "../gl/framebuffer.h"
 
 namespace pbf {
 
@@ -24,10 +25,17 @@ public:
 private:
     gl::Buffer _vbo;
     gl::VertexArray _vao;
+    gl::Framebuffer _fbo;
+
+    unsigned _render_buf;
+    unsigned _depth_buf;
 
     std::shared_ptr<Fluid> _fluid;
 
+    static gl::Buffer _screen_vbo;
+    static gl::VertexArray _screen_vao;
     static gl::Program points_prog;
+    static gl::Program screen_prog;
 };
 
 }

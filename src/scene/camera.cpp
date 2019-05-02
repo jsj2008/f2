@@ -8,11 +8,11 @@
 
 Camera::Camera() :
     _yaw(-M_PI_2), _pitch(0), _roll(0),
-    _afovy(0), _aspect(0), _near(0), _far(100),
+    _afovy(60.f), _aspect(0), _near(0.1f), _far(100.f),
     _pos(0.f)
 {
     glm::ivec2 viewport = Input::poll_viewport();
-    set_perspective(60.0f, (float) viewport.x / viewport.y, 0.1f, 100.0f);
+    set_perspective(_afovy, (float) viewport.x / viewport.y, _near, _far);
     calc_view();
 }
 

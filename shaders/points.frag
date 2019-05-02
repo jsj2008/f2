@@ -22,7 +22,6 @@ void main() {
     vec4 clip_pos = proj * pos;
     float ndc_depth = clip_pos.z / clip_pos.w;
     gl_FragDepth = (gl_DepthRange.diff * ndc_depth + gl_DepthRange.near + gl_DepthRange.far) / 2.f;
-    f_color = vec4(gl_FragDepth);
 
     vec3 ldir = normalize(-pos.xyz);
     vec3 color = vec3(0.15f, 0.65f, 1.f);
