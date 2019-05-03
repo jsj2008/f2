@@ -44,9 +44,9 @@ bool View::init() {
     glViewport(0, 0, _width, _height);
 
     Input::init(_window);
-    Input::on_resize([this](int width, int height) {
-        this->_width = width;
-        this->_height = height;
+    Input::on_resize([&](int width, int height) {
+        _width = width;
+        _height = height;
         glViewport(0, 0, width, height);
     });
 

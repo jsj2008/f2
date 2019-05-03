@@ -12,6 +12,7 @@ gl::Buffer FluidRenderer::_screen_vbo;
 gl::VertexArray FluidRenderer::_screen_vao;
 gl::Program FluidRenderer::points_prog;
 gl::Program FluidRenderer::screen_prog;
+gl::Program FluidRenderer::depth_prog;
 
 void FluidRenderer::init() {
     gl::VertexShader points_vert;
@@ -38,6 +39,18 @@ void FluidRenderer::init() {
     if (!screen_prog.link())
         throw std::runtime_error("Unable to link screen program");
 
+    gl::VertexShader depth_vert;
+    gl::FragmentShader depth_frag;
+
+    depth_vert.from_file("./shaders/bilateral.vert");
+    depth_frag.from_file("./shaders/bilateral.frag");
+
+    depth_prog.create();
+    depth_prog.attach_shader(depth_vert);
+    depth_prog.attach_shader(depth_frag);
+    if (!depth_prog.link())
+        throw std::runtime_error("Unable to link depth program");
+
     _screen_vao.create();
     _screen_vbo.create();
 
@@ -56,7 +69,10 @@ void FluidRenderer::init() {
     _screen_vao.unbind();
 }
 
-FluidRenderer::FluidRenderer() : _vao(true), _vbo(true), _fbo(true) {
+FluidRenderer::FluidRenderer() :
+        _vao(true), _vbo(true), _fbo_0(true), _fbo_1(true),
+        _blur_scale(64.f), _blur_depth_fall_off(64.f) {
+
     _vao.bind();
     _vbo.bind();
     _vao.vertex_attr(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
@@ -65,36 +81,49 @@ FluidRenderer::FluidRenderer() : _vao(true), _vbo(true), _fbo(true) {
 
     glm::ivec2 vp = Input::poll_viewport();
 
-    glGenTextures(1, &_render_buf);
-    glBindTexture(GL_TEXTURE_2D, _render_buf);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, vp.x, vp.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
     glGenTextures(1, &_depth_buf);
     glBindTexture(GL_TEXTURE_2D, _depth_buf);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, vp.x, vp.y, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
+    glGenTextures(1, &_t_depth_buf);
+    glBindTexture(GL_TEXTURE_2D, _t_depth_buf);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, vp.x, vp.y, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    _fbo.bind();
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _render_buf, 0);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depth_buf, 0);
+    _fbo = &_fbo_0;
+    _t_fbo = &_fbo_1;
 
-    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        throw std::runtime_error("framebuffer not complete");
+    Input::on_resize([&](int width, int height) {
+        glBindTexture(GL_TEXTURE_2D, _depth_buf);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, nullptr);
 
-    _fbo.unbind();
+        glBindTexture(GL_TEXTURE_2D, _t_depth_buf);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, nullptr);
+
+        glBindTexture(GL_TEXTURE_2D, 0);
+    });
+}
+
+FluidRenderer::~FluidRenderer() {
+    glDeleteTextures(1, &_depth_buf);
+    glDeleteTextures(1, &_t_depth_buf);
 }
 
 void FluidRenderer::render(Camera &camera) {
-    _fbo.bind();
 
-    glEnable(GL_DEPTH_TEST);
+    gl::Framebuffer *fbo = swap_fbo();
+
+    // Render Particle Depths
+    fbo->bind();
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depth_buf, 0);
+
     glClearColor(0.f, 0.f, 0.f, 0.f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_DEPTH_BUFFER_BIT);
 
     _vao.bind();
     _vbo.bind();
@@ -113,22 +142,56 @@ void FluidRenderer::render(Camera &camera) {
 
     glDrawArrays(GL_POINTS, 0, (GLsizei) _fluid->_num_particles);
 
-    _fbo.unbind();
     _vao.unbind();
     _vbo.unbind();
 
-    screen_prog.use();
+    // Apply Bilateral Filter Approximation to depths
+    fbo = swap_fbo();
+    fbo->bind();
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _t_depth_buf, 0);
+    glClear(GL_DEPTH_BUFFER_BIT);
+
+    depth_prog.use();
     _screen_vao.bind();
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, _depth_buf);
+
+    glUniform1i(depth_prog.get_uniform_loc("depth_tex"), 0);
+    glUniform1i(depth_prog.get_uniform_loc("filter_radius"), 16);
+    glUniform1f(depth_prog.get_uniform_loc("blur_scale"), _blur_scale);
+    glUniform1f(depth_prog.get_uniform_loc("blur_depth_fall_off"), _blur_depth_fall_off);
+    glUniform2f(depth_prog.get_uniform_loc("filter_dir"), 1.f / vp.x, 0);
+
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, (GLsizei) 4);
+
+    fbo = swap_fbo();
+    fbo->bind();
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depth_buf, 0);
+    glClear(GL_DEPTH_BUFFER_BIT);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, _t_depth_buf);
+
+    glUniform1i(depth_prog.get_uniform_loc("depth_tex"), 0);
+    glUniform1i(depth_prog.get_uniform_loc("filter_radius"), 16);
+    glUniform1f(depth_prog.get_uniform_loc("blur_scale"), _blur_scale);
+    glUniform1f(depth_prog.get_uniform_loc("blur_depth_fall_off"), _blur_depth_fall_off);
+    glUniform2f(depth_prog.get_uniform_loc("filter_step"), 0, 1.f / vp.y);
+
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, (GLsizei) 4);
+
+    fbo->unbind();
+
+    // Render screen space fluid
+    screen_prog.use();
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, _t_depth_buf);
 
     glUniform2iv(screen_prog.get_uniform_loc("vp"), 1, glm::value_ptr(vp));
     glUniformMatrix4fv(screen_prog.get_uniform_loc("inv_proj"), 1, GL_FALSE, glm::value_ptr(glm::inverse(camera.proj())));
-    glUniform1i(screen_prog.get_uniform_loc("screen_tex"), 0);
-    glUniform1i(screen_prog.get_uniform_loc("depth_tex"), 1);
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, _render_buf);
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, _depth_buf);
+    glUniform1i(screen_prog.get_uniform_loc("depth_tex"), 0);
 
     glDrawArrays(GL_TRIANGLE_STRIP, 0, (GLsizei) 4);
 

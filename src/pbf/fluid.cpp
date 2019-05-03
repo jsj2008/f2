@@ -128,7 +128,7 @@ void Fluid::init_domain() {
 }
 
 void Fluid::init_cl_bufs() {
-    size_t vector_buf_size = 3 * sizeof(float) * _num_particles;
+    size_t vector_buf_size = 3 * sizeof(float) * _buf_size;
     _cl_int_pos = cl::Buffer(CLContextManager::context(), CL_MEM_READ_WRITE, vector_buf_size);
     _cl_int_vel = cl::Buffer(CLContextManager::context(), CL_MEM_READ_WRITE, vector_buf_size);
     _cl_int_pred_pos = cl::Buffer(CLContextManager::context(), CL_MEM_READ_WRITE, vector_buf_size);
@@ -136,10 +136,10 @@ void Fluid::init_cl_bufs() {
     _cl_int_temp_0 = cl::Buffer(CLContextManager::context(), CL_MEM_READ_WRITE, vector_buf_size);
     _cl_int_temp_1 = cl::Buffer(CLContextManager::context(), CL_MEM_READ_WRITE, vector_buf_size);
 
-    size_t fscalar_buf_size = sizeof(cl_float) * _num_particles;
+    size_t fscalar_buf_size = sizeof(cl_float) * _buf_size;
     _cl_int_lambda = cl::Buffer(CLContextManager::context(), CL_MEM_READ_WRITE, fscalar_buf_size);
 
-    size_t iscalar_buf_size = sizeof(cl_uint) * _num_particles;
+    size_t iscalar_buf_size = sizeof(cl_uint) * _buf_size;
     _cl_int_bin_offset = cl::Buffer(CLContextManager::context(), CL_MEM_READ_WRITE, iscalar_buf_size);
 
     size_t num_bins = _params.dim_x *_params.dim_y * _params.dim_z;

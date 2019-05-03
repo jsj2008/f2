@@ -7,7 +7,6 @@ out vec4 f_color;
 uniform ivec2 vp;
 uniform mat4 inv_proj;
 
-uniform sampler2D screen_tex;
 uniform sampler2D depth_tex;
 
 vec3 uv_to_view(vec2 tex_uv, float depth) {
@@ -23,11 +22,10 @@ vec3 get_view_pos(vec2 tex_uv) {
 }
 
 void main() {
-    vec4 color = texture(screen_tex, uv);
-    if (color.a != 1.f)
+    float depth = texture(depth_tex, uv).x;
+    if (depth > 0.99f)
         discard;
 
-    float depth = texture(depth_tex, uv).x;
     vec3 eye_pos = uv_to_view(uv, depth);
 
     vec3 ddx = get_view_pos(uv + vec2(1.f / vp.x, 0)) - eye_pos;
@@ -43,9 +41,12 @@ void main() {
     vec3 n = cross(ddx, ddy);
     n = normalize(n);
 
-    vec3 l = normalize(-eye_pos);
-    float diffuse = 0.5f + 0.5f * dot(n, l);
-    vec4 out_color = vec4(diffuse, diffuse, diffuse, 1.f);
+    f_color = vec4(n, 1.f);
 
-    f_color = out_color;
+    vec3 ldir = normalize(-eye_pos);
+    vec3 base_color = vec3(0.15f, 0.65f, 1.f);
+    vec3 ambient = vec3(0.2f, 0.2f, 0.4f);
+    float diffuse = clamp(dot(n, ldir), 0.f, 1.f);
+    f_color = vec4(ambient + diffuse * base_color, 1.0);
+    gl_FragDepth = depth;
 }

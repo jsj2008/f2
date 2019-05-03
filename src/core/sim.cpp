@@ -2,6 +2,7 @@
 // Created by Dillon Yao on 4/25/19.
 //
 
+#include <iostream>
 #include "sim.h"
 #include "input.h"
 #include "../scene/geometry/plane.h"
@@ -86,6 +87,22 @@ void Sim::attach_input_cbs() {
             case GLFW_KEY_S:
                 break;
             case GLFW_KEY_R:
+                break;
+            case GLFW_KEY_LEFT_BRACKET:
+                _renderer->blur_scale() = 0.5f * _renderer->blur_scale();
+                std::cout << "blur_scale: " << _renderer->blur_scale() << std::endl;
+                break;
+            case GLFW_KEY_RIGHT_BRACKET:
+                _renderer->blur_scale() = 2.f * _renderer->blur_scale();
+                std::cout << "blur_scale: " << _renderer->blur_scale() << std::endl;
+                break;
+            case GLFW_KEY_MINUS:
+                _renderer->blur_depth_fall_off() = 0.5f * _renderer->blur_depth_fall_off();
+                std::cout << "blur_depth_fall_off: " << _renderer->blur_depth_fall_off() << std::endl;
+                break;
+            case GLFW_KEY_EQUAL:
+                _renderer->blur_depth_fall_off() = 2.f * _renderer->blur_depth_fall_off();
+                std::cout << "blur_depth_fall_off: " << _renderer->blur_depth_fall_off() << std::endl;
                 break;
             default:
                 break;
