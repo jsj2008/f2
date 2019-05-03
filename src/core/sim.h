@@ -15,6 +15,7 @@ public:
 
     void update();
     void render();
+    void reset();
 
 private:
     Scene _scene;

@@ -48,7 +48,7 @@ public:
     Fluid(FluidParams &params);
 
     inline void spawn(glm::vec3 p);
-    void spawn_cube(glm::vec3 ori, float length, float density=10);
+    size_t spawn_cube(glm::vec3 ori, float length, float density=10);
 
     void update();
     void clear();

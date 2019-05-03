@@ -14,7 +14,8 @@ Sim::Sim() :
     attach_input_cbs();
 
     _fluid = std::make_shared<pbf::Fluid>();
-    _fluid->spawn_cube(glm::vec3(0.25f, 0.25f, 0.25f), 1.5f, 20);
+    size_t count = _fluid->spawn_cube(glm::vec3(0.25f, 0.25f, 0.25f), 1.5f, 20);
+    std::cout << "spawned " << count << " particles" << std::endl;
 
     _renderer = std::make_shared<pbf::FluidRenderer>();
     _renderer->set_fluid(_fluid);
@@ -47,6 +48,12 @@ void Sim::render() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     _scene.render(_camera);
+}
+
+void Sim::reset() {
+    _fluid->clear();
+    size_t count = _fluid->spawn_cube(glm::vec3(0.25f, 0.25f, 0.25f), 1.5f, 20);
+    std::cout << "spawned " << count << " particles" << std::endl;
 }
 
 void Sim::attach_input_cbs() {
@@ -87,6 +94,7 @@ void Sim::attach_input_cbs() {
             case GLFW_KEY_S:
                 break;
             case GLFW_KEY_R:
+                reset();
                 break;
             case GLFW_KEY_LEFT_BRACKET:
                 _renderer->blur_scale() = 0.5f * _renderer->blur_scale();

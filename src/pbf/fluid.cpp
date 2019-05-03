@@ -76,16 +76,28 @@ Fluid::Fluid(FluidParams &params) :
 }
 
 void Fluid::spawn(glm::vec3 p) {
-    if (_num_particles == _buf_size)
-        return;
+    if (_num_particles == _buf_size) {
+        float *new_buf = (float *) malloc(sizeof(float) * 3 * 2 * _buf_size);
+        if (!new_buf)
+            return;
+
+        std::memcpy(new_buf, _pos, sizeof(float) * 3 * _buf_size);
+        free(_pos);
+
+        _pos = new_buf;
+        _buf_size *= 2;
+        _should_resize = true;
+    }
+
     _pos[3 * _num_particles] = p.x;
     _pos[3 * _num_particles + 1] = p.y;
     _pos[3 * _num_particles + 2] = p.z;
     ++_num_particles;
 }
 
-void Fluid::spawn_cube(glm::vec3 ori, float length, float density) {
+size_t Fluid::spawn_cube(glm::vec3 ori, float length, float density) {
     float stride = 1.f / density;
+    size_t old_size = _num_particles;
 
     for (float x = 0; x < length; x += stride) {
         for (float y = 0; y < length; y += stride) {
@@ -94,6 +106,8 @@ void Fluid::spawn_cube(glm::vec3 ori, float length, float density) {
             }
         }
     }
+
+    return _num_particles - old_size;
 }
 
 void Fluid::update() {
@@ -116,8 +130,8 @@ void Fluid::update() {
 }
 
 void Fluid::clear() {
+    CLContextManager::queue().enqueueFillBuffer(_cl_int_vel, 0, 0, 3 * sizeof(float) * _buf_size);
     _num_particles = 0;
-    _should_resize = true;
 }
 
 void Fluid::init_domain() {
