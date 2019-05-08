@@ -24,7 +24,6 @@ Sim::Sim() :
 }
 
 void Sim::init() {
-    // size_t count = _fluid->spawn_cube(glm::vec3(0.25f, 0.25f, 0.25f), 1.5f, 20);
     size_t count = _fluid->spawn_volume(glm::vec3(0.25f, 0.25f, 0.25f), glm::vec3(0.75f, 2.f, 1.75f), 20);
     std::cout << "spawned " << count << " particles" << std::endl;
 
@@ -60,7 +59,6 @@ void Sim::render() {
 
 void Sim::reset() {
     _fluid->clear();
-    // size_t count = _fluid->spawn_cube(glm::vec3(0.25f, 0.25f, 0.25f), 1.5f, 20);
     size_t count = _fluid->spawn_volume(glm::vec3(0.25f, 0.25f, 0.25f), glm::vec3(0.75f, 2.f, 1.75f), 20);
     std::cout << "spawned " << count << " particles" << std::endl;
 }
