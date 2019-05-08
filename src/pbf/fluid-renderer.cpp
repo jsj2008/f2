@@ -134,7 +134,7 @@ void FluidRenderer::render(Camera &camera) {
 
     glm::ivec2 vp = Input::poll_viewport();
 
-    glUniform1f(points_prog.get_uniform_loc("radius"), 0.025f);
+    glUniform1f(points_prog.get_uniform_loc("radius"), 0.05f);
     glUniform2iv(points_prog.get_uniform_loc("vp"), 1, glm::value_ptr(vp));
     glUniformMatrix4fv(points_prog.get_uniform_loc("model"), 1, GL_FALSE, glm::value_ptr(glm::mat4(1.f)));
     glUniformMatrix4fv(points_prog.get_uniform_loc("view"), 1, GL_FALSE, glm::value_ptr(camera.view()));

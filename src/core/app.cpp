@@ -17,6 +17,7 @@ bool App::init() {
     pbf::FluidRenderer::init();
 
     _sim = std::make_unique<Sim>();
+    _sim->init();
     return true;
 }
 

@@ -13,12 +13,20 @@ Sim::Sim() :
 
     attach_input_cbs();
 
-    _fluid = std::make_shared<pbf::Fluid>();
-    size_t count = _fluid->spawn_cube(glm::vec3(0.25f, 0.25f, 0.25f), 1.5f, 20);
-    std::cout << "spawned " << count << " particles" << std::endl;
+    pbf::FluidParams params;
+    params.y_max = 2.f;
+    
+    _fluid = std::make_shared<pbf::Fluid>(params);
+    
 
     _renderer = std::make_shared<pbf::FluidRenderer>();
     _renderer->set_fluid(_fluid);
+}
+
+void Sim::init() {
+    // size_t count = _fluid->spawn_cube(glm::vec3(0.25f, 0.25f, 0.25f), 1.5f, 20);
+    size_t count = _fluid->spawn_volume(glm::vec3(0.25f, 0.25f, 0.25f), glm::vec3(0.75f, 2.f, 1.75f), 20);
+    std::cout << "spawned " << count << " particles" << std::endl;
 
     _scene.add_thing(std::make_shared<Plane>(glm::vec3(0.f), glm::vec3(0.f), glm::vec2(4.f, 2.f)));
     _scene.add_thing(std::make_shared<Plane>(glm::vec3(0.f, 2.f, 0.f), glm::vec3(M_PI_2, 0.f, 0.f), glm::vec2(4.f, 2.f)));
@@ -52,7 +60,8 @@ void Sim::render() {
 
 void Sim::reset() {
     _fluid->clear();
-    size_t count = _fluid->spawn_cube(glm::vec3(0.25f, 0.25f, 0.25f), 1.5f, 20);
+    // size_t count = _fluid->spawn_cube(glm::vec3(0.25f, 0.25f, 0.25f), 1.5f, 20);
+    size_t count = _fluid->spawn_volume(glm::vec3(0.25f, 0.25f, 0.25f), glm::vec3(0.75f, 2.f, 1.75f), 20);
     std::cout << "spawned " << count << " particles" << std::endl;
 }
 

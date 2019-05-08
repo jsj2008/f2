@@ -49,6 +49,7 @@ public:
 
     inline void spawn(glm::vec3 p);
     size_t spawn_cube(glm::vec3 ori, float length, float density=10);
+    size_t spawn_volume(glm::vec3 ori, glm::vec3 end, float density=10);
 
     void update();
     void clear();

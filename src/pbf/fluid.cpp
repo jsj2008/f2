@@ -110,6 +110,21 @@ size_t Fluid::spawn_cube(glm::vec3 ori, float length, float density) {
     return _num_particles - old_size;
 }
 
+size_t Fluid::spawn_volume(glm::vec3 ori, glm::vec3 end, float density) {
+    float stride = 1.f / density;
+    size_t old_size = _num_particles;
+
+    for (float x = ori.x; x < end.x; x += stride) {
+        for (float y = ori.y; y < end.y; y += stride) {
+            for (float z = ori.z; z < end.z; z += stride) {
+                spawn(glm::vec3(x, y, z));
+            }
+        }
+    }
+
+    return _num_particles - old_size;
+}
+
 void Fluid::update() {
     if (_should_resize)
         init_cl_bufs();
@@ -130,7 +145,7 @@ void Fluid::update() {
 }
 
 void Fluid::clear() {
-    CLContextManager::queue().enqueueFillBuffer(_cl_int_vel, 0, 0, 3 * sizeof(float) * _buf_size);
+    CLContextManager::queue().enqueueFillBuffer(*_b_vel_dp, 0, 0, 3 * sizeof(float) * _buf_size);
     _num_particles = 0;
 }
 
